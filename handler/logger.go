@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -33,6 +34,27 @@ var DefaultLoggerFormatter LoggerFunc = func(p LoggerFuncParams) {
 	fmt.Printf("%s | %12s | %3d | %-7s | %s\n",
 		p.Timestamp.Format(DefaultLoggerFormatterTimeFormat),
 		p.Latency.String(), p.StatusCode, p.Method, path)
+}
+
+func SlogLogger(l *slog.Logger, level slog.Level) LoggerFunc {
+	return func(p LoggerFuncParams) {
+		path := p.Path
+		if p.Query != "" {
+			path = path + "?" + p.Query
+		}
+
+		l.Log(p.Request.Context(), level, "Request",
+			"time", p.Timestamp.Format(DefaultLoggerFormatterTimeFormat),
+			"latency", p.Latency.String(),
+			"status", p.StatusCode,
+			"method", p.Method,
+			"path", path,
+		)
+	}
+}
+
+func SlogLoggerHandler(l *slog.Logger, level slog.Level) WrapperFunc {
+	return LogHandlerWith(SlogLogger(l, level))
 }
 
 func LogHandlerWith(f LoggerFunc) WrapperFunc {

@@ -44,6 +44,18 @@ func RecoveryHandlerWith(f RecoveryFunc) WrapperFunc {
 	}
 }
 
+type RecoveryErrFunc func(w http.ResponseWriter, r *http.Request, err error)
+
+func RecoveryFuncE(f RecoveryErrFunc) RecoveryFunc {
+	return func(w http.ResponseWriter, r *http.Request, err any) {
+		e, ok := err.(error)
+		if !ok {
+			e = fmt.Errorf("%v", err)
+		}
+		f(w, r, e)
+	}
+}
+
 var DefaultRecoveryFunc = RecoveryHandlerWith(func(w http.ResponseWriter, r *http.Request, err any) {
 	e, ok := err.(error)
 	if !ok {
