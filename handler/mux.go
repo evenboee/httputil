@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 )
 
 type ServeMux struct {
@@ -96,10 +97,20 @@ func (mux *ServeMux) MustRunTLS(port string, certFile string, keyFile string) {
 	}
 }
 
+func (mux *ServeMux) Register(pattern string, f http.HandlerFunc) {
+	if pattern == "/" {
+		pattern = "/{$}"
+	} else if !strings.HasSuffix(pattern, "/") {
+		pattern += "/{$}"
+	}
+
+	mux.HandleFunc(pattern, mux.WrapperF(f))
+}
+
 func Handle[T any](mux *ServeMux, pattern string, f Func[T], opts ...funcConfigOpt) {
-	mux.HandleFunc(pattern, mux.WrapperF(NewFunc(f, opts...)))
+	mux.Register(pattern, NewFunc(f, opts...))
 }
 
 func HandleWith[T any](mux *ServeMux, pattern string, f Func[T], config *FuncConfig) {
-	mux.HandleFunc(pattern, mux.WrapperF(NewFuncWith(f, config)))
+	mux.Register(pattern, NewFuncWith(f, config))
 }

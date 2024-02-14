@@ -19,12 +19,12 @@ func main() {
 	mux := handler.New().WithWrapperF(handler.PrintWrapper("[mux]"))
 
 	// recovery wrapper at work
-	mux.HandleFunc("/panic", func(w http.ResponseWriter, r *http.Request) {
+	mux.Register("/panic", func(w http.ResponseWriter, r *http.Request) {
 		panic(fmt.Errorf("%s %w", "panic", fmt.Errorf("wrapped")))
 	})
 
 	// Simple handler with auth
-	mux.HandleFunc("/{$}", withAuth(func(w http.ResponseWriter, r *http.Request) {
+	mux.Register("/", withAuth(func(w http.ResponseWriter, r *http.Request) {
 		u := auth.GetUsername(r)
 		handler.String(w, http.StatusOK, "Hello, "+u)
 	}))
@@ -36,7 +36,7 @@ func main() {
 	// Add handler.Func with func config
 	// prints [mux] and then [getPeople]
 	fc := handler.NewFuncConfig().WithWrapper(handler.PrintWrapper("[getPeople]"))
-	handler.HandleWith(mux, "GET /people/", getPeople, fc)
+	handler.HandleWith(mux, "GET /people", getPeople, fc)
 
 	mux.MustRun("8081")
 }

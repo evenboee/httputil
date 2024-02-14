@@ -71,7 +71,7 @@ func LogHandlerWith(f LoggerFunc) WrapperFunc {
 
 			f(LoggerFuncParams{
 				Request:    r,
-				StatusCode: lw.Status,
+				StatusCode: status,
 				Method:     r.Method,
 				Path:       r.URL.Path,
 				Query:      r.URL.RawQuery,
