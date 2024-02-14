@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -19,7 +20,7 @@ func main() {
 
 	// recovery wrapper at work
 	mux.HandleFunc("/panic", func(w http.ResponseWriter, r *http.Request) {
-		panic("test")
+		panic(fmt.Errorf("%s %w", "panic", fmt.Errorf("wrapped")))
 	})
 
 	// Simple handler with auth

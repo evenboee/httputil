@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"reflect"
 )
 
@@ -56,11 +58,25 @@ func RecoveryFuncE(f RecoveryErrFunc) RecoveryFunc {
 	}
 }
 
-var DefaultRecoveryFunc = RecoveryHandlerWith(func(w http.ResponseWriter, r *http.Request, err any) {
-	e, ok := err.(error)
-	if !ok {
-		e = fmt.Errorf("%v", err)
+var DefaultRecoveryFuncErrFuncOutput = os.Stdout.WriteString
+
+var DefaultRecoveryFuncErrFunc = func(err error) {
+	errChain := []error{}
+	for unwrapped := err; unwrapped != nil; unwrapped = errors.Unwrap(unwrapped) {
+		errChain = append(errChain, unwrapped)
 	}
 
-	Error(w, http.StatusInternalServerError, e)
-})
+	DefaultRecoveryFuncErrFuncOutput("[ panic ] Recovered error\n")
+	t := ""
+	for _, e := range errChain {
+		t += "\t"
+		DefaultRecoveryFuncErrFuncOutput(t + fmt.Sprintf("%T: %s\n", e, e.Error()))
+	}
+}
+
+var DefaultRecoveryFunc = RecoveryHandlerWith(
+	RecoveryFuncE(func(w http.ResponseWriter, r *http.Request, err error) {
+		DefaultRecoveryFuncErrFunc(err)
+		Error(w, http.StatusInternalServerError, err)
+	}),
+)

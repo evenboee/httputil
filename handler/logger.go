@@ -23,16 +23,16 @@ type LoggerFuncParams struct {
 
 type LoggerFunc func(LoggerFuncParams)
 
-var DefaultLoggerFormatterTimeFormat = "2006-01-02 15:04:05"
+var DefaultLoggerFuncTimeFormat = "2006-01-02 15:04:05"
 
-var DefaultLoggerFormatter LoggerFunc = func(p LoggerFuncParams) {
+var DefaultLoggerFunc LoggerFunc = func(p LoggerFuncParams) {
 	path := p.Path
 	if p.Query != "" {
 		path = path + "?" + p.Query
 	}
 
 	fmt.Printf("%s | %12s | %3d | %-7s | %s\n",
-		p.Timestamp.Format(DefaultLoggerFormatterTimeFormat),
+		p.Timestamp.Format(DefaultLoggerFuncTimeFormat),
 		p.Latency.String(), p.StatusCode, p.Method, path)
 }
 
@@ -44,7 +44,6 @@ func SlogLogger(l *slog.Logger, level slog.Level) LoggerFunc {
 		}
 
 		l.Log(p.Request.Context(), level, "Request",
-			"time", p.Timestamp.Format(DefaultLoggerFormatterTimeFormat),
 			"latency", p.Latency.String(),
 			"status", p.StatusCode,
 			"method", p.Method,
@@ -83,7 +82,7 @@ func LogHandlerWith(f LoggerFunc) WrapperFunc {
 	}
 }
 
-var LoggerHandler = LogHandlerWith(DefaultLoggerFormatter)
+var LoggerHandler = LogHandlerWith(DefaultLoggerFunc)
 
 type LogWriter struct {
 	Status int

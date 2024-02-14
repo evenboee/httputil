@@ -8,10 +8,16 @@ import (
 
 type ServeMux struct {
 	*http.ServeMux
+	// WrapperH is used to wrap handler on startup
 	WrapperH WrapperHandler
+	// WrapperF is used to wrap functions added with Handle and HandleWith
 	WrapperF WrapperFunc
-	Logger   *slog.Logger
+	// Logger is used to log server messages and for logging requests if LoggerFunc is not set
+	Logger *slog.Logger
+	// LogLevel is the level at which the logger logs at
 	LogLevel slog.Level
+	// LoggerFunc is used to log the request
+	LoggerFunc LoggerFunc
 }
 
 func New() *ServeMux {
@@ -46,9 +52,25 @@ func (mux *ServeMux) WithLogger(l *slog.Logger) *ServeMux {
 	return mux
 }
 
+func (mux *ServeMux) WithLogLevel(l slog.Level) *ServeMux {
+	mux.LogLevel = l
+	return mux
+}
+
+func (mux *ServeMux) WithLoggerFunc(l LoggerFunc) *ServeMux {
+	mux.LoggerFunc = l
+	return mux
+}
+
 func (mux *ServeMux) GetHandler() http.Handler {
-	lh := SlogLoggerHandler(mux.Logger, slog.LevelInfo)
-	w := WrapperH(lh)
+	var loggerFunc WrapperFunc
+	if loggerFunc != nil {
+		loggerFunc = LogHandlerWith(mux.LoggerFunc)
+	} else {
+		loggerFunc = SlogLoggerHandler(mux.Logger, slog.LevelInfo)
+	}
+
+	w := WrapperH(loggerFunc)
 	return w(mux.WrapperH(mux))
 }
 
